@@ -1,0 +1,6 @@
+{
+    "source": ".",
+    "include": ["*.html", "*.js"],
+    "listen": "localhost:3000",
+    "serveDir": "./build"
+}
