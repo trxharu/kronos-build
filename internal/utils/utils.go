@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"regexp"
+	"strings"
 )
 
 func GetWatchableDirs(root string) ([]string, error) {
@@ -42,8 +43,14 @@ func DirsExcludePatterns(dirs []string, patterns []string) []string {
 
 func buildRegex(patterns []string) []regexp.Regexp {
 	var regexPatterns []regexp.Regexp
+
 	for _, pattern := range patterns {
-		strPattern := fmt.Sprintf("^%s[/]{0,1}", pattern)
+		prefix := "^"
+		if strings.Contains(pattern, "**/") {
+			prefix = ""
+			pattern = strings.TrimPrefix(pattern, "**/")
+		}
+		strPattern := fmt.Sprintf("%s%s[/]{0,1}", prefix, pattern)
 		regexPatterns = append(regexPatterns, *regexp.MustCompile(strPattern))
 	}
 	return regexPatterns

@@ -1,6 +1,10 @@
 {
     "source": ".",
-    "include": ["*.html", "*.js"],
+    "includeFiles": ["*.html", "*.js"],
+    "excludeDir": [
+        ".git",
+        "internal"
+    ],
     "listen": "localhost:3000",
     "serveDir": "./build"
 }

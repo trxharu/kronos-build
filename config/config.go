@@ -7,8 +7,8 @@ import (
 
 type Config struct {
 	Source string `json:"source"`
-	Include []string `json:"include"`
-	Exclude []string `json:"exclude"`
+	IncludeFiles []string `json:"includeFiles"`
+	ExcludeDir []string `json:"excludeDir"`
 	ServeDir string `json:"serveDir"`
 	Listen string `json:"listen"`
 }
@@ -17,8 +17,8 @@ func ReadConfigFromFile(filePath string) (Config, error) {
 	config := Config {
 		ServeDir: ".",
 		Source: ".",
-		Include: []string{"**/*.*"},
-		Exclude: []string{".git"},
+		IncludeFiles: []string{"**/*.*"},
+		ExcludeDir: []string{".git"},
 		Listen: "localhost:2345",
 	}
 
