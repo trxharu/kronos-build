@@ -1,24 +1,47 @@
 package server
 
 import (
+	"errors"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
-	"github.com/gorilla/websocket"
+	"path"
+
+	ws "trxharu.dev/build-tool/internal/websocket"
 )
 
 
-func StartServer(path string, addr string, ws func(*websocket.Conn)) error {
+func StartServer(rootpath string, addr string, ws *ws.WebSocket) (*http.Server, error) {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	muxer := http.NewServeMux()
-	muxer.Handle("/", http.FileServer(http.Dir(path)))
-	muxer.HandleFunc("/ws", getWsHandler(ws))
+	// Static File Serving
+	muxer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		indexPage, _ := os.ReadFile(rootpath + "/index.html")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(InjectScript(indexPage, addr)))
+	})
+
+	muxer.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		favicon, err := os.ReadFile(rootpath + "/favicon.ico")	
+		if errors.Is(err, fs.ErrNotExist) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte{})
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Write(favicon)
+		}
+	})
+
+	assets := path.Join(rootpath, "assets")
+	muxer.Handle("/assets", http.FileServer(http.Dir(assets)))
+	// WebSocket Handler
+	muxer.HandleFunc("/ws", ws.GetWsHandler(addr))
 
 	log.Printf("Local server started on http://%s.", addr)
 
@@ -27,33 +50,7 @@ func StartServer(path string, addr string, ws func(*websocket.Conn)) error {
 		Handler: muxer, 
 	}
 
-	intSignal := make(chan os.Signal, 1)
-	signal.Notify(intSignal, os.Interrupt)
-
 	go server.Serve(ln)
-	<- intSignal
-
-	log.Println("Shutting down local server.")
-	err = server.Close()
-	return err 
+	return server, err 
 }
 
-func getWsHandler(wsCallback func(ws *websocket.Conn)) http.HandlerFunc {
-
-	var upgrader = websocket.Upgrader {
-		ReadBufferSize: 1024,
-		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool { return true },
-	}
-
-	wsHandler := func(w http.ResponseWriter, r *http.Request) {
-		ws, err := upgrader.Upgrade(w, r, nil)	
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println("Client Connected")
-		wsCallback(ws)
-	}
-
-	return wsHandler
-}

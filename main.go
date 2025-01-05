@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"regexp"
 
-	"github.com/gorilla/websocket"
 	"trxharu.dev/build-tool/config"
 	"trxharu.dev/build-tool/internal/server"
 	"trxharu.dev/build-tool/internal/utils"
 	"trxharu.dev/build-tool/internal/watcher"
+	"trxharu.dev/build-tool/internal/websocket"
 )
 
 
@@ -23,28 +24,46 @@ func main() {
 
 	regexPatterns := compilePatterns(config.WatchFileTypes)
 
-	fswatcher := watcher.Watcher{}
+	ws := &websocket.WebSocket{
+		WsChan: make(chan websocket.Message),
+	}
 
+	fswatcher := watcher.Watcher{}
 	fswatcher.WatchOverDirs(dirs, func(event int, args string) {
+		if event == watcher.DIR_CREATED {
+			ws.WsChan <- websocket.Message{
+				Type: "newdir",
+				Data: args,
+			}
+		}
 		if event == watcher.FILE_CREATED || event == watcher.FILE_MODIFIED {
 			pass := filterFileTypes(args, regexPatterns)
 			if !pass { return }
-			fmt.Println(args)
+			ws.WsChan <- websocket.Message{ 
+				Type: "update", 
+				Data: args,
+			}
 		}
+
 		if event == watcher.REMOVE_EVENT {
-			fmt.Println("REMOVED", args)
+			ws.WsChan <- websocket.Message{ 
+				Type: "remove", 
+				Data: args,
+			}
 		}
 	})
+	
 
-	defer fswatcher.Close()
+	intSignal := make(chan os.Signal, 1)
+	signal.Notify(intSignal, os.Interrupt)
 
-	wsHandler := func(ws *websocket.Conn) {
-		ws.WriteJSON("text ws")
-		ws.Close()
-	}
-
-	err = server.StartServer(config.ServeDir, config.Listen, wsHandler)
+	s, err := server.StartServer(config.ServeDir, config.Listen, ws)
 	fatalErrorExit(err)
+	<- intSignal
+
+	fswatcher.Close()
+	ws.Close()
+	s.Close()	
 }
 
 func compilePatterns(patterns []string) []regexp.Regexp {
