@@ -6,12 +6,12 @@ import (
 	"os/signal"
 	"regexp"
 
-	"trxharu.dev/build-tool/config"
-	"trxharu.dev/build-tool/internal/server"
-	"trxharu.dev/build-tool/internal/utils"
-	"trxharu.dev/build-tool/internal/watcher"
-	"trxharu.dev/build-tool/internal/websocket"
-	"trxharu.dev/build-tool/trigger"
+	"trxharu.dev/kronos-build/config"
+	"trxharu.dev/kronos-build/internal/server"
+	"trxharu.dev/kronos-build/internal/utils"
+	"trxharu.dev/kronos-build/internal/watcher"
+	"trxharu.dev/kronos-build/internal/websocket"
+	"trxharu.dev/kronos-build/trigger"
 )
 
 

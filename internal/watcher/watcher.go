@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/fsnotify/fsnotify"
-	"trxharu.dev/build-tool/internal/utils"
+	"trxharu.dev/kronos-build/internal/utils"
 )
 
 const (

@@ -1,16 +1,15 @@
 package server
 
 import (
-	"errors"
-	"io/fs"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"path"
 
-	ws "trxharu.dev/build-tool/internal/websocket"
+	"github.com/gin-gonic/gin"
 	"github.com/pkg/browser"
+	ws "trxharu.dev/kronos-build/internal/websocket"
 )
 
 
@@ -20,35 +19,24 @@ func StartServer(rootpath string, addr string, ws *ws.WebSocket) (*http.Server, 
 		return nil, err
 	}
 
-	muxer := http.NewServeMux()
-	// Static File Serving
-	muxer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router := gin.Default()
+	router.GET("/", func(ctx *gin.Context) {
 		indexPage, _ := os.ReadFile(rootpath + "/index.html")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(InjectScript(indexPage, addr)))
-	})
-
-	muxer.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		favicon, err := os.ReadFile(rootpath + "/favicon.ico")	
-		if errors.Is(err, fs.ErrNotExist) {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte{})
-		} else {
-			w.WriteHeader(http.StatusOK)
-			w.Write(favicon)
-		}
+		ctx.Data(200, "text/html; charset=utf-8", []byte(InjectScript(indexPage, addr)))
 	})
 
 	assets := path.Join(rootpath, "assets")
-	muxer.Handle("/assets", http.FileServer(http.Dir(assets)))
+	router.Static("/assets", assets)
+	router.StaticFile("/favicon.ico", rootpath + "/favicon.ico")	
+
 	// WebSocket Handler
-	muxer.HandleFunc("/ws", ws.GetWsHandler(addr))
+	router.GET("/ws", gin.WrapH(ws.GetWsHandler(addr)))
 
 	log.Printf("Local server started on http://%s.", addr)
 
 	server := &http.Server {
 		Addr: addr,
-		Handler: muxer, 
+		Handler: router, 
 	}
 
 	go server.Serve(ln)
