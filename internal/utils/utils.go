@@ -1,12 +1,37 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"regexp"
 	"strings"
 )
+
+func IsPathExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	} else if errors.Is(err, fs.ErrNotExist) {
+		return false 
+	} else {
+		return false
+	}
+}
+
+func IsDir(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	if info.IsDir() {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
 
 func GetWatchableDirs(root string) ([]string, error) {
 	var dirs []string
@@ -23,11 +48,6 @@ func GetWatchableDirs(root string) ([]string, error) {
 	})
 
 	return dirs, err
-}
-
-func DirsIncludePatterns(dirs []string, patterns []string) []string {
-
-	return dirs
 }
 
 func DirsExcludePatterns(dirs []string, patterns []string) []string {

@@ -1,10 +1,11 @@
 {
-    "source": ".",
-    "includeFiles": ["*.html", "*.js"],
-    "excludeDir": [
-        ".git",
-        "internal"
-    ],
+
     "listen": "localhost:3000",
-    "serveDir": "./build"
+    "serveDir": "build/",
+    "source": ".",
+    "watchFileTypes": ["html", "ts"],
+    "excludeDir": [
+        ".git"
+    ],
+    "runCmd": ["tsc"]
 }
