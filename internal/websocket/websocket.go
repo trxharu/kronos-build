@@ -31,7 +31,9 @@ func (ws *WebSocket) Write() {
 	for {
 		ws.wmu.Lock()
 		if err := ws.Conn.WriteJSON(<- ws.WsChan); err != nil {
+			ws.wmu.Unlock()
 			log.Println(err.Error())	
+			return
 		}
 		ws.wmu.Unlock()
 	}

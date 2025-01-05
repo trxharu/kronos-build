@@ -10,6 +10,7 @@ import (
 	"path"
 
 	ws "trxharu.dev/build-tool/internal/websocket"
+	"github.com/pkg/browser"
 )
 
 
@@ -51,6 +52,8 @@ func StartServer(rootpath string, addr string, ws *ws.WebSocket) (*http.Server, 
 	}
 
 	go server.Serve(ln)
+	_ = browser.OpenURL("http://" + addr)
+	
 	return server, err 
 }
 

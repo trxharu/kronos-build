@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
-	"strings"
 )
 
 func IsPathExists(path string) bool {
@@ -35,14 +36,15 @@ func IsDir(path string) (bool, error) {
 
 func GetWatchableDirs(root string) ([]string, error) {
 	var dirs []string
-	fileSystem := os.DirFS(root)
+	absPath, _ := filepath.Abs(root)
+	fileSystem := os.DirFS(absPath)
 	
-	err := fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(fileSystem, ".", func(src string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err	
 		}
 		if d.IsDir() {
-			dirs = append(dirs, path)
+			dirs = append(dirs, path.Join(absPath, src))
 		}
 		return nil
 	})
@@ -54,8 +56,9 @@ func DirsExcludePatterns(dirs []string, patterns []string) []string {
 	var newDirs []string
 	regexPatterns := buildRegex(patterns)
 	for _, dir := range dirs {
-		if !matchDirPatterns(dir, regexPatterns) {
-			newDirs = append(newDirs, dir)
+		absPath, _ := filepath.Abs(dir)
+		if !matchDirPatterns(absPath, regexPatterns) {
+			newDirs = append(newDirs, absPath)
 		}
 	}
 	return newDirs 
@@ -65,10 +68,9 @@ func buildRegex(patterns []string) []regexp.Regexp {
 	var regexPatterns []regexp.Regexp
 
 	for _, pattern := range patterns {
-		prefix := "^"
-		if strings.Contains(pattern, "**/") {
+		prefix := ".*"
+		if filepath.IsAbs(pattern) {
 			prefix = ""
-			pattern = strings.TrimPrefix(pattern, "**/")
 		}
 		strPattern := fmt.Sprintf("%s%s[/]{0,1}", prefix, pattern)
 		regexPatterns = append(regexPatterns, *regexp.MustCompile(strPattern))

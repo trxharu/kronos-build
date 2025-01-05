@@ -1,0 +1,12 @@
+{
+  "name": "kronos-build",
+  "version": "0.1.0",
+  "bin": {
+    "kronos-build": "./bin/kronos-build"
+  },
+  "files": ["bin/"],
+  "keywords": [],
+  "author": "trxharu",
+  "license": "ISC",
+  "description": "Kronos build-tool for simple folks"
+}

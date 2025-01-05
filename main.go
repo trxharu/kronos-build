@@ -11,18 +11,31 @@ import (
 	"trxharu.dev/build-tool/internal/utils"
 	"trxharu.dev/build-tool/internal/watcher"
 	"trxharu.dev/build-tool/internal/websocket"
+	"trxharu.dev/build-tool/trigger"
 )
 
 
 func main() {
-	config, err := config.ReadConfigFromFile("settings.json")
-	fatalErrorExit(err)
+	args := os.Args
+	var cfg config.Config
+	var err error
 
-	dirs, err := utils.GetWatchableDirs(config.Source)
-	fatalErrorExit(err)
-	dirs = utils.DirsExcludePatterns(dirs, config.ExcludeDir)
+	if len(args) > 1 {
+		cfg, err = config.ReadConfigFromFile(args[1])
+		fatalErrorExit(err)
+	} else {
+		cfg, err = config.ReadConfigFromFile("kronos.build.json")
+		fatalErrorExit(err)
+	}
 
-	regexPatterns := compilePatterns(config.WatchFileTypes)
+	dirs, err := utils.GetWatchableDirs(cfg.Source)
+	fatalErrorExit(err)
+	
+	trigger.SetupPipeline(cfg.ServeDir)			
+	trigger.TriggerBuildPipeline(cfg.RunCmd)
+
+	dirs = utils.DirsExcludePatterns(dirs, cfg.ExcludeDir)
+	regexPatterns := compilePatterns(cfg.WatchFileTypes)
 
 	ws := &websocket.WebSocket{
 		WsChan: make(chan websocket.Message),
@@ -39,6 +52,7 @@ func main() {
 		if event == watcher.FILE_CREATED || event == watcher.FILE_MODIFIED {
 			pass := filterFileTypes(args, regexPatterns)
 			if !pass { return }
+			trigger.TriggerBuildPipeline(cfg.RunCmd)
 			ws.WsChan <- websocket.Message{ 
 				Type: "update", 
 				Data: args,
@@ -52,12 +66,12 @@ func main() {
 			}
 		}
 	})
-	
+
 
 	intSignal := make(chan os.Signal, 1)
 	signal.Notify(intSignal, os.Interrupt)
 
-	s, err := server.StartServer(config.ServeDir, config.Listen, ws)
+	s, err := server.StartServer(cfg.ServeDir, cfg.Listen, ws)
 	fatalErrorExit(err)
 	<- intSignal
 

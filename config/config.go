@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 type Config struct {
@@ -14,7 +15,7 @@ type Config struct {
 	RunCmd []string `json:"runCmd"`
 }
 
-func ReadConfigFromFile(filePath string) (Config, error) {
+func ReadConfigFromFile(path string) (Config, error) {
 	config := Config {
 		ServeDir: ".",
 		Source: ".",
@@ -24,7 +25,9 @@ func ReadConfigFromFile(filePath string) (Config, error) {
 		RunCmd: []string{},
 	}
 
-	file, err := os.Open(filePath)
+	absPath, _ := filepath.Abs(path)
+
+	file, err := os.Open(absPath)
 	if err != nil {
 		return config, err
 	}
