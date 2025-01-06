@@ -1,26 +1,24 @@
-let ws = null
-let isConnected = false
+const ws = new WebSocket("ws://@addr/ws")
+const handler = null
 
-function init(addr) {
-    ws = new WebSocket(`ws://${addr}/ws`)
+ws.onopen = () => {
+    console.log("[Kronos] Development server connected.")
+    isConnected = true;
+}
 
-    ws.onopen = () => {
-        console.log("[Kronos] Development server connected.")
-        isConnected = true;
+ws.onmessage = (event) => {
+    if (handler !== null) {
+        clearTimeout(handler)
     }
 
-    ws.onmessage = (event) => {
-        console.log(event.data)
+    handler = setTimeout(() => {
+        console.log(event)
+        ws.close()
         location.reload()
-    }
+    }, 500)
 }
 
-init("@addr")
-
-if (isConnected) {
-    ws.onclose = () => {
-        console.error("[Kronos] Development server disconnected.")
-        isConnected = false
-        setInterval(() => init("@addr"), 2000) 
-    }
+ws.onclose = () => {
+    console.error("[Kronos] Development server disconnected.")
 }
+
