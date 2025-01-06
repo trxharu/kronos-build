@@ -19,7 +19,9 @@ func StartServer(rootpath string, addr string, ws *ws.WebSocket) (*http.Server, 
 		return nil, err
 	}
 
-	router := gin.Default()
+	gin.SetMode(gin.ReleaseMode)	
+	router := gin.New()
+
 	router.GET("/", func(ctx *gin.Context) {
 		indexPage, _ := os.ReadFile(rootpath + "/index.html")
 		ctx.Data(200, "text/html; charset=utf-8", []byte(InjectScript(indexPage, addr)))
